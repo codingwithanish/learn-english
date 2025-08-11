@@ -1,6 +1,7 @@
 import os
 from typing import List
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -18,8 +19,10 @@ class Settings(BaseSettings):
     # OAuth
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/auth/google/callback"
     INSTAGRAM_CLIENT_ID: str = ""
     INSTAGRAM_CLIENT_SECRET: str = ""
+    FRONTEND_URL: str = "http://localhost:3000"
     
     # AWS S3
     AWS_ACCESS_KEY_ID: str = ""
@@ -31,7 +34,14 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     
     # CORS
-    ALLOWED_HOSTS: List[str] = ["http://localhost:3000", "http://localhost:3001"]
+    ALLOWED_HOSTS: str = "http://localhost:3000,http://localhost:3001"
+    
+    @property
+    def allowed_hosts_list(self) -> List[str]:
+        """Parse ALLOWED_HOSTS string into list"""
+        if isinstance(self.ALLOWED_HOSTS, str):
+            return [host.strip() for host in self.ALLOWED_HOSTS.split(',')]
+        return self.ALLOWED_HOSTS
     
     # Celery
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"

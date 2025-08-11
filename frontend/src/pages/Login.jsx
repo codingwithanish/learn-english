@@ -17,16 +17,11 @@ const Login = () => {
     setError('');
 
     try {
-      // In a real app, you would integrate with Google OAuth
-      // For now, we'll simulate a login with mock data
-      const mockGoogleResponse = {
-        id_token: 'mock_id_token_here'
-      };
-
-      await login(mockGoogleResponse);
+      // Redirect to backend Google OAuth endpoint
+      // The backend will handle the OAuth flow and redirect back
+      window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
     } catch (err) {
       setError(err.message || 'Login failed');
-    } finally {
       setIsLoading(false);
     }
   };

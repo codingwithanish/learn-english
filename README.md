@@ -34,6 +34,7 @@ learn-english/
 ├── .env.docker              # Docker environment template
 ├── .env.example              # General environment template  
 ├── .gitignore                # Git ignore rules (all technologies)
+├── check_setup.py            # Environment verification script
 ├── docker-compose.yml        # Docker services configuration
 ├── OAUTH_SETUP.md           # Google/Instagram login guide
 ├── README.md                # This documentation
@@ -542,6 +543,47 @@ sudo chown -R $USER:$USER .
 - For Google/Instagram login setup problems, see the [OAuth Setup Guide](./OAUTH_SETUP.md)
 - Check redirect URI configuration in provider consoles
 - Verify environment variables are set correctly
+
+#### VSCode Debugging Issues
+
+**ModuleNotFoundError when debugging backend:**
+
+1. **Check virtual environment is created**:
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+2. **Verify VSCode is using the correct Python interpreter**:
+   - Press `Ctrl+Shift+P` → "Python: Select Interpreter"
+   - Choose `.\backend\.venv\Scripts\python.exe`
+
+3. **Use the updated launch.json configurations**:
+   - "Debug FastAPI Backend" - Uses module approach for uvicorn
+   - "Debug Celery Worker" - Uses module approach for celery  
+   - "Debug Full Stack" - Runs both backend and frontend together
+
+**Alternative: Run manually**:
+```bash
+cd backend
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### Environment Verification
+
+**Check your setup with the verification script**:
+```bash
+python check_setup.py
+```
+
+This script will verify:
+- Python version and virtual environment
+- Required packages installation
+- Node.js and npm availability
+- Environment file configuration
+- Docker setup (if using)
+- Database services availability
 
 ## 🚀 Production Deployment
 

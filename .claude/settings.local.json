@@ -9,7 +9,15 @@
       "Bash(docker exec:*)",
       "Bash(curl:*)",
       "Bash(touch:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(python:*)",
+      "Bash(.venvScriptsactivate.bat)",
+      "Bash(pip install:*)",
+      "Bash(.venv/Scripts/python.exe -m pip install:*)",
+      "Bash(.venv/Scripts/python.exe -m uvicorn:*)",
+      "Bash(npm start)",
+      "Bash(taskkill:*)",
+      "Bash(alembic current:*)"
     ],
     "deny": []
   }

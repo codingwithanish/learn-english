@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './store/authStore';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
+import OAuthCallback from './pages/OAuthCallback';
 import Home from './pages/Home';
 import Speak from './pages/Speak';
 import SpeakDetail from './pages/SpeakDetail';
@@ -17,6 +18,7 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/oauth/callback" element={<OAuthCallback />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Home />

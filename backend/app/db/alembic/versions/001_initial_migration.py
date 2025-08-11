@@ -17,19 +17,19 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create ENUM types
-    op.execute("CREATE TYPE logintype AS ENUM ('GOOGLE', 'FACEBOOK', 'INSTAGRAM')")
-    op.execute("CREATE TYPE usertype AS ENUM ('TUTOR', 'ADMIN', 'STUDENT')")
-    op.execute("CREATE TYPE userplan AS ENUM ('FREE', 'PREMIUM')")
-    op.execute("CREATE TYPE userstatus AS ENUM ('ACTIVE', 'BLOCKED')")
-    op.execute("CREATE TYPE resourcetype AS ENUM ('VOCABULARY', 'PHRASE', 'GRAMMAR')")
-    op.execute("CREATE TYPE resourcestatus AS ENUM ('ACTIVE', 'BLOCKED')")
-    op.execute("CREATE TYPE speakresourcestatus AS ENUM ('INITIATED', 'COMPLETED')")
-    op.execute("CREATE TYPE speakresourcetype AS ENUM ('SUBJECT_SPEAK', 'CONVERSATION')")
-    op.execute("CREATE TYPE initiatedresourcetype AS ENUM ('TUTOR', 'STUDENT')")
-    op.execute("CREATE TYPE actiontype AS ENUM ('text', 'speak')")
-    op.execute("CREATE TYPE referencetable AS ENUM ('text_resources', 'speak_resources')")
-    op.execute("CREATE TYPE impressiontype AS ENUM ('NEW', 'EXISTING')")
+    # Create ENUM types - use IF NOT EXISTS to avoid conflicts
+    op.execute("DO $$ BEGIN CREATE TYPE logintype AS ENUM ('GOOGLE', 'FACEBOOK', 'INSTAGRAM'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE usertype AS ENUM ('TUTOR', 'ADMIN', 'STUDENT'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE userplan AS ENUM ('FREE', 'PREMIUM'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE userstatus AS ENUM ('ACTIVE', 'BLOCKED'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE resourcetype AS ENUM ('VOCABULARY', 'PHRASE', 'GRAMMAR'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE resourcestatus AS ENUM ('ACTIVE', 'BLOCKED'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE speakresourcestatus AS ENUM ('INITIATED', 'COMPLETED'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE speakresourcetype AS ENUM ('SUBJECT_SPEAK', 'CONVERSATION'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE initiatedresourcetype AS ENUM ('TUTOR', 'STUDENT'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE actiontype AS ENUM ('text', 'speak'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE referencetable AS ENUM ('text_resources', 'speak_resources'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE impressiontype AS ENUM ('NEW', 'EXISTING'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
     
     # Create user_details table
     op.create_table('user_details',

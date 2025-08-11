@@ -73,6 +73,21 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'LOGIN_START' });
     
     try {
+      // If authData contains access_token and user, it's from OAuth callback
+      if (authData.access_token && authData.user) {
+        // Store in localStorage
+        localStorage.setItem('auth_token', authData.access_token);
+        localStorage.setItem('auth_user', JSON.stringify(authData.user));
+        
+        dispatch({
+          type: 'LOGIN_SUCCESS',
+          payload: { user: authData.user, token: authData.access_token }
+        });
+        
+        return authData;
+      }
+      
+      // Otherwise, make API call (for other login methods)
       const response = await authService.googleAuth(authData);
       
       // Store in localStorage
