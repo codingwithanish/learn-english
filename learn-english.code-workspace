@@ -1,0 +1,72 @@
+{
+    "folders": [
+        {
+            "name": "Backend",
+            "path": "./backend"
+        },
+        {
+            "name": "Frontend", 
+            "path": "./frontend"
+        }
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "./.venv/Scripts/python.exe",
+        "python.terminal.activateEnvironment": true,
+        "python.analysis.autoImportCompletions": true,
+        "python.analysis.autoSearchPaths": true,
+        "python.analysis.extraPaths": [
+            "./backend"
+        ],
+        "python.cwd": "./backend",
+        "python.analysis.stubPath": "./backend",
+        "python.linting.enabled": true,
+        "python.linting.flake8Enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.formatting.provider": "black",
+        "python.envFile": "./backend/.env",
+        "python.terminal.executeInFileDir": false,
+        "files.exclude": {
+            "**/node_modules": true,
+            "**/.git": true,
+            "**/__pycache__": true,
+            "**/*.pyc": true,
+            "**/build": true,
+            "**/dist": true,
+            "**/.env": true
+        },
+        "typescript.preferences.includePackageJsonAutoImports": "on",
+        "javascript.preferences.includePackageJsonAutoImports": "on",
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "[javascript]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[javascriptreact]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "tailwindCSS.includeLanguages": {
+            "javascript": "javascript",
+            "javascriptreact": "javascriptreact"
+        },
+        "emmet.includeLanguages": {
+            "javascript": "javascriptreact"
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.debugpy",
+            "ms-python.pylance",
+            "ms-python.flake8",
+            "ms-python.black-formatter",
+            "bradlc.vscode-tailwindcss",
+            "esbenp.prettier-vscode",
+            "dbaeumer.vscode-eslint",
+            "ms-vscode.vscode-typescript-next",
+            "ms-vscode.vscode-json",
+            "formulahendry.auto-rename-tag",
+            "christian-kohler.path-intellisense",
+            "ms-vscode.vscode-css-language-service"
+        ]
+    }
+}

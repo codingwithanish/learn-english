@@ -134,15 +134,7 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Virtual environments
-.env
-.venv/
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-.virtualenv/
+
 
 # Spyder project settings
 .spyderproject
@@ -268,12 +260,6 @@ storybook-static
 tmp/
 temp/
 
-# Editor directories and files
-.vscode/settings.json
-.vscode/tasks.json
-.vscode/launch.json
-.vscode/extensions.json
-.vscode/*.code-workspace
 
 # =============================================================================
 # DOCKER
@@ -286,12 +272,6 @@ redis-data/
 backend-data/
 beat-data/
 pgadmin-data/
-
-# Docker override files
-docker-compose.override.yml
-docker-compose.*.yml
-!docker-compose.yml
-!docker-compose.prod.yml
 
 # =============================================================================
 # DATABASES
@@ -347,13 +327,7 @@ Thumbs.db
 # IDEs AND EDITORS
 # =============================================================================
 
-# VSCode
-.vscode/
-!.vscode/settings.json.example
-!.vscode/launch.json.example
-!.vscode/tasks.json.example
-!.vscode/extensions.json.example
-*.code-workspace
+
 
 # IntelliJ IDEA
 .idea/
@@ -528,3 +502,5 @@ $RECYCLE.BIN/
 /data/audio/
 /logs/
 seed_data_generated.sql
+
+*/.venv/*

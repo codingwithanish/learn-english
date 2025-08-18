@@ -1,0 +1,193 @@
+# Simplified Docker Compose - BackgroundTasks Only (Single Container Deployment)
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: learn-english-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: learn_english
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - learn-english-network
+
+  # Redis Cache (for task result storage and general caching)
+  redis:
+    image: redis:7-alpine
+    container_name: learn-english-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - learn-english-network
+
+  # Backend API Server with Built-in BackgroundTasks
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: learn-english-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Core Configuration
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/learn_english
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Task System Configuration
+      - TASK_EXECUTOR=background  # Use BackgroundTasks by default
+      - ENABLE_CELERY=false       # Celery disabled by default
+      
+      # JWT Authentication
+      - JWT_SECRET_KEY=development-secret-key-change-in-production
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+      
+      # OAuth Providers
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - INSTAGRAM_CLIENT_ID=${INSTAGRAM_CLIENT_ID:-}
+      - INSTAGRAM_CLIENT_SECRET=${INSTAGRAM_CLIENT_SECRET:-}
+      
+      # AWS Services
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=us-east-1
+      - S3_BUCKET=learn-english-audio
+      
+      # External APIs
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      
+      # CORS Configuration
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - FRONTEND_URL=http://localhost:3000
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - learn-english-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: |
+      sh -c '
+        echo "🚀 Starting Learn English Backend..." &&
+        echo "⏳ Waiting for database..." &&
+        sleep 10 &&
+        echo "🔄 Running database migrations..." &&
+        (alembic upgrade head || echo "⚠️ Migration failed, continuing...") &&
+        echo "🌱 Seeding initial data..." &&
+        (python -m app.utils.seed_data || echo "⚠️ Seed data failed, continuing...") &&
+        echo "✅ Starting FastAPI server with BackgroundTasks..." &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level info
+      '
+
+  # Frontend React Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: learn-english-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000
+      - REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - REACT_APP_INSTAGRAM_CLIENT_ID=${INSTAGRAM_CLIENT_ID:-}
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - GENERATE_SOURCEMAP=false  # Reduce build time
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - learn-english-network
+    stdin_open: true
+    tty: true
+
+  # Development Database Admin Interface (Optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: learn-english-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@learnenglish.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - learn-english-network
+    profiles:
+      - dev-tools
+
+  # Redis Commander for Redis Management (Optional)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: learn-english-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - learn-english-network
+    profiles:
+      - dev-tools
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_data:
+  pgadmin_data:
+
+networks:
+  learn-english-network:
+    driver: bridge
+
+# Usage Examples:
+# 
+# Simple deployment (core services only):
+# docker-compose -f docker-compose.simple.yml up -d
+# 
+# With development tools:
+# docker-compose -f docker-compose.simple.yml --profile dev-tools up -d
+# 
+# Scale backend for higher load:
+# docker-compose -f docker-compose.simple.yml up -d --scale backend=2
+# 
+# View logs:
+# docker-compose -f docker-compose.simple.yml logs -f backend
+# 
+# Stop all services:
+# docker-compose -f docker-compose.simple.yml down

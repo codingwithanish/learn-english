@@ -1,0 +1,177 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug FastAPI Backend (BackgroundTasks)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "app.main:app",
+                "--reload",
+                "--host", "0.0.0.0",
+                "--port", "8000"
+            ],
+            "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend",
+                "TASK_EXECUTOR": "background",
+                "ENABLE_CELERY": "false"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/backend/.env",
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+        },
+        {
+            "name": "Debug FastAPI Backend (Hybrid)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "app.main:app",
+                "--reload",
+                "--host", "0.0.0.0",
+                "--port", "8000"
+            ],
+            "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend",
+                "TASK_EXECUTOR": "hybrid",
+                "ENABLE_CELERY": "true",
+                "HEAVY_TASKS": "process_speak_audio,calculate_all_ratings,sync_impressions_from_redis"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/backend/.env",
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+        },
+        {
+            "name": "Debug Celery Worker (Optional)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "celery",
+            "args": [
+                "-A", "app.workers.celery_app",
+                "worker",
+                "--loglevel=debug",
+                "--concurrency=1"
+            ],
+            "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend",
+                "ENABLE_CELERY": "true"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/backend/.env",
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+        },
+        {
+            "name": "Debug Task System Test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/test_task_system_simple.py",
+            "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+        },
+        {
+            "name": "Debug React Frontend (Browser)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}/frontend/src",
+            "sourceMapPathOverrides": {
+                "webpack:///src/*": "${webRoot}/*"
+            },
+            "preLaunchTask": "Start Frontend Server"
+        },
+        {
+            "name": "Debug React Frontend (Node)",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/frontend",
+            "runtimeExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
+            "runtimeArgs": ["start"],
+            "env": {
+                "NODE_ENV": "development",
+                "BROWSER": "none"
+            },
+            "console": "integratedTerminal",
+            "outputCapture": "std"
+        },
+        {
+            "name": "Debug Frontend Tests",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/frontend/node_modules/.bin/react-scripts",
+            "args": ["test", "--watchAll=false"],
+            "cwd": "${workspaceFolder}/frontend",
+            "console": "integratedTerminal",
+            "env": {
+                "CI": "true"
+            }
+        },
+        {
+            "name": "Debug Backend Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["-v"],
+            "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/backend/.env",
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug Full Stack (BackgroundTasks)",
+            "configurations": [
+                "Debug FastAPI Backend (BackgroundTasks)",
+                "Debug React Frontend (Node)"
+            ],
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "fullstack",
+                "order": 1
+            }
+        },
+        {
+            "name": "Debug Full Stack (Hybrid)",
+            "configurations": [
+                "Debug FastAPI Backend (Hybrid)",
+                "Debug React Frontend (Node)"
+            ],
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "fullstack",
+                "order": 2
+            }
+        },
+        {
+            "name": "Debug Backend with Celery Worker",
+            "configurations": [
+                "Debug FastAPI Backend (Hybrid)",
+                "Debug Celery Worker (Optional)"
+            ],
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "backend",
+                "order": 1
+            }
+        }
+    ]
+}

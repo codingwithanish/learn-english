@@ -1,0 +1,350 @@
+# Scaled Docker Compose - With Optional Celery Workers
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: learn-english-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: learn_english
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - learn-english-network
+
+  # Redis Cache and Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: learn-english-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    networks:
+      - learn-english-network
+
+  # Backend API Server with Hybrid Task System
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: learn-english-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Core Configuration
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/learn_english
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Task System Configuration (Hybrid Mode)
+      - TASK_EXECUTOR=hybrid       # Use both BackgroundTasks and Celery
+      - ENABLE_CELERY=true         # Enable Celery for heavy tasks
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      
+      # Task Routing Configuration
+      - HEAVY_TASKS=process_speak_audio,calculate_all_ratings,sync_impressions_from_redis
+      
+      # JWT Authentication
+      - JWT_SECRET_KEY=development-secret-key-change-in-production
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+      
+      # OAuth Providers
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - INSTAGRAM_CLIENT_ID=${INSTAGRAM_CLIENT_ID:-}
+      - INSTAGRAM_CLIENT_SECRET=${INSTAGRAM_CLIENT_SECRET:-}
+      
+      # AWS Services
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=us-east-1
+      - S3_BUCKET=learn-english-audio
+      
+      # External APIs
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      
+      # CORS Configuration
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - FRONTEND_URL=http://localhost:3000
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - learn-english-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: |
+      sh -c '
+        echo "🚀 Starting Learn English Backend (Hybrid Mode)..." &&
+        echo "⏳ Waiting for database..." &&
+        sleep 10 &&
+        echo "🔄 Running database migrations..." &&
+        (alembic upgrade head || echo "⚠️ Migration failed, continuing...") &&
+        echo "🌱 Seeding initial data..." &&
+        (python -m app.utils.seed_data || echo "⚠️ Seed data failed, continuing...") &&
+        echo "✅ Starting FastAPI server with Hybrid Task System..." &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level info
+      '
+
+  # Celery Worker for Heavy Background Tasks
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # Core Configuration
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/learn_english
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Celery Configuration
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      
+      # AWS Services for audio processing
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=us-east-1
+      - S3_BUCKET=learn-english-audio
+      
+      # External APIs
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - ./backend:/app
+      - worker_data:/app/worker-data
+    depends_on:
+      - postgres
+      - redis
+      - backend
+    networks:
+      - learn-english-network
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app status | grep -q 'OK' || exit 1"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    command: |
+      sh -c '
+        echo "👷 Starting Celery Worker..." &&
+        sleep 15 &&
+        celery -A app.workers.celery_app worker \
+          --loglevel=info \
+          --concurrency=4 \
+          --max-tasks-per-child=1000 \
+          --time-limit=1800 \
+          --soft-time-limit=1500 \
+          --hostname=worker@%h
+      '
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    profiles:
+      - scaled
+
+  # Celery Beat Scheduler for Periodic Tasks
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: learn-english-celery-beat
+    restart: unless-stopped
+    environment:
+      # Core Configuration
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/learn_english
+      - REDIS_URL=redis://redis:6379/0
+      
+      # Celery Configuration
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    volumes:
+      - ./backend:/app
+      - celery_beat_data:/app/beat-data
+    depends_on:
+      - postgres
+      - redis
+      - backend
+    networks:
+      - learn-english-network
+    command: |
+      sh -c '
+        echo "⏰ Starting Celery Beat Scheduler..." &&
+        sleep 20 &&
+        celery -A app.workers.celery_app beat \
+          --loglevel=info \
+          --schedule=/app/beat-data/celerybeat-schedule.db \
+          --pidfile=/app/beat-data/celerybeat.pid
+      '
+    profiles:
+      - scaled
+
+  # Frontend React Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: learn-english-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000
+      - REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - REACT_APP_INSTAGRAM_CLIENT_ID=${INSTAGRAM_CLIENT_ID:-}
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - GENERATE_SOURCEMAP=false
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - learn-english-network
+    stdin_open: true
+    tty: true
+
+  # Nginx Load Balancer (for production scaling)
+  nginx:
+    image: nginx:alpine
+    container_name: learn-english-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.scaled.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - learn-english-network
+    profiles:
+      - production
+    command: |
+      sh -c '
+        echo "🌐 Starting Nginx Load Balancer..." &&
+        nginx -g "daemon off;"
+      '
+
+  # Monitoring and Development Tools
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: learn-english-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@learnenglish.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - learn-english-network
+    profiles:
+      - dev-tools
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: learn-english-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379,celery:redis:6379:1
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - learn-english-network
+    profiles:
+      - dev-tools
+
+  # Celery Flower for Worker Monitoring
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: learn-english-flower
+    restart: unless-stopped
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      - redis
+    networks:
+      - learn-english-network
+    command: |
+      sh -c '
+        echo "🌸 Starting Celery Flower..." &&
+        sleep 20 &&
+        celery -A app.workers.celery_app flower \
+          --port=5555 \
+          --broker=redis://redis:6379/1
+      '
+    profiles:
+      - dev-tools
+      - scaled
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_data:
+  worker_data:
+  celery_beat_data:
+  pgadmin_data:
+
+networks:
+  learn-english-network:
+    driver: bridge
+
+# Usage Examples:
+# 
+# Basic deployment with BackgroundTasks:
+# docker-compose -f docker-compose.scaled.yml up -d
+# 
+# Full scaled deployment with Celery workers:
+# docker-compose -f docker-compose.scaled.yml --profile scaled up -d
+# 
+# With development tools:
+# docker-compose -f docker-compose.scaled.yml --profile scaled --profile dev-tools up -d
+# 
+# Scale workers for higher load:
+# docker-compose -f docker-compose.scaled.yml --profile scaled up -d --scale celery-worker=3
+# 
+# Production with load balancer:
+# docker-compose -f docker-compose.scaled.yml --profile scaled --profile production up -d
+# 
+# Monitor workers with Flower:
+# docker-compose -f docker-compose.scaled.yml --profile scaled --profile dev-tools up -d
+# # Visit http://localhost:5555 for Celery monitoring

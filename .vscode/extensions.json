@@ -1,0 +1,27 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.flake8",
+        "ms-python.black-formatter",
+        "ms-python.pylint",
+        "ms-vscode.vscode-json",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-typescript-next",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "ms-vscode-remote.remote-containers",
+        "ms-vscode.test-adapter-converter",
+        "ms-python.pytest",
+        "rangav.vscode-thunder-client",
+        "humao.rest-client",
+        "ms-vscode.vscode-json",
+        "aaron-bond.better-comments",
+        "oderwat.indent-rainbow",
+        "pkief.material-icon-theme",
+        "github.copilot"
+    ]
+}
