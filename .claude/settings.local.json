@@ -17,8 +17,29 @@
       "Bash(.venv/Scripts/python.exe -m uvicorn:*)",
       "Bash(npm start)",
       "Bash(taskkill:*)",
-      "Bash(alembic current:*)"
+      "Bash(alembic current:*)",
+      "Bash(dir:*)",
+      "Bash(..venvScriptspython.exe --version)",
+      "Bash(\".venv/Scripts/python.exe\" --version)",
+      "Bash(\".venv/Scripts/python.exe\" -m pip install -e .)",
+      "Bash(\".venv/Scripts/python.exe\" -c \"import sys; print(''Python path:'', sys.path)\")",
+      "Bash(\".venv/Scripts/python.exe\" -m pip install -e backend/)",
+      "Bash(\".venv/Scripts/python.exe\" -c \"from app.schemas.speak import SpeakResourceResponse; print(''Import successful!'')\")",
+      "Bash(PYTHONPATH=\"D:\\Workspace\\learn-english\\backend\" \".venv/Scripts/python.exe\" -c \"from app.schemas.speak import SpeakResourceResponse; print(''Import successful'')\")",
+      "Bash(\".venv/Scripts/python.exe\":*)",
+      "Bash(PYTHONPATH=\"D:\\Workspace\\learn-english\\backend\" \".venv/Scripts/python.exe\" -c \"from app.core.config import settings; print(''Config import successful'')\")",
+      "Bash(PYTHONPATH=\"D:\\Workspace\\learn-english\\backend\" \".venv/Scripts/python.exe\" -c \"from app.core.security import get_current_user; print(''Security import successful'')\")",
+      "Bash(PYTHONPATH=\"D:\\Workspace\\learn-english\\backend\" \".venv/Scripts/python.exe\" -c \"from app.schemas.speak import SpeakResourceResponse; print(''Schema import successful'')\")",
+      "Bash(chmod:*)",
+      "Bash(bash:*)",
+      "Bash(tasklist:*)",
+      "Bash(powershell:*)",
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(rm:*)",
+      "Bash(npm run build:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

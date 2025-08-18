@@ -15,7 +15,7 @@ from app.schemas.speak import SpeakSessionMessage, SpeakSessionResponse
 from app.services.stt_service import STTService
 from app.services.nlp_service import NLPService
 from app.services.tts_service import TTSService
-from app.workers.tasks import process_speak_audio
+from app.core.tasks import get_task_manager
 
 router = APIRouter()
 
@@ -273,10 +273,40 @@ async def handle_stop_session(message: SpeakSessionMessage, session_id: str, use
     # Trigger background processing
     try:
         resource_id = session_data.get("resource_id")
-        if resource_id:
-            # This would be handled by Celery worker in production
-            # For now, simulate processing
+        audio_chunks = session_data.get("audio_chunks", [])
+        
+        if resource_id and audio_chunks:
+            # Get task manager and submit processing task
+            task_manager = get_task_manager()
+            
+            # Get user name for TTS
+            db = SessionLocal()
+            try:
+                user = db.query(UserDetails).filter(UserDetails.id == user_id).first()
+                user_name = user.name if user else "Student"
+            finally:
+                db.close()
+            
+            # Submit background task with FastAPI BackgroundTasks
+            from fastapi import BackgroundTasks
+            background_tasks = BackgroundTasks()
+            
+            task_id = await task_manager.submit(
+                "process_speak_audio",
+                resource_id,
+                audio_chunks,
+                user_name,
+                background_tasks=background_tasks
+            )
+            
+            # For now, simulate processing for immediate feedback
             await simulate_processing(session_id, resource_id, session_data)
+        else:
+            await manager.send_personal_message({
+                "type": "error",
+                "code": 400,
+                "message": "No audio data to process"
+            }, session_id)
     except Exception as e:
         await manager.send_personal_message({
             "type": "error",

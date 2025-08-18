@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
-from app.api import auth, text, speak, tutor, history
+from app.api import auth, text, speak, tutor, history, llm
 from app.ws.speak_ws import router as ws_router
 
 
@@ -37,6 +37,7 @@ app.include_router(text.router, prefix="/api", tags=["text"])
 app.include_router(speak.router, prefix="/api", tags=["speak"])
 app.include_router(tutor.router, prefix="/api/tutor", tags=["tutor"])
 app.include_router(history.router, prefix="/api", tags=["history"])
+app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
 app.include_router(ws_router)
 
 

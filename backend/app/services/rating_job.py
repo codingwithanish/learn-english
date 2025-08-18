@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
 from app.models.models import TextResources, TutorRatings, UserHistory, ActionType
-from app.workers.tasks import calculate_rating
+from app.core.tasks import get_task_manager
 
 
 class RatingService:
@@ -55,11 +55,17 @@ class RatingService:
         return min(round(final_rating, 1), 5.0)
     
     @staticmethod
-    def update_resource_rating(resource_id: str, resource_type: str = "text"):
+    async def update_resource_rating(resource_id: str, resource_type: str = "text", background_tasks=None):
         """Queue a rating calculation task"""
         try:
-            task = calculate_rating.delay(resource_id, resource_type)
-            return task.id
+            task_manager = get_task_manager()
+            task_id = await task_manager.submit(
+                "calculate_rating",
+                resource_id,
+                resource_type,
+                background_tasks=background_tasks
+            )
+            return task_id
         except Exception as e:
             print(f"Failed to queue rating calculation: {e}")
             return None
@@ -126,14 +132,20 @@ class RatingService:
         }
     
     @staticmethod
-    def bulk_update_ratings(resource_ids: List[str], resource_type: str = "text") -> List[str]:
+    async def bulk_update_ratings(resource_ids: List[str], resource_type: str = "text", background_tasks=None) -> List[str]:
         """Queue rating calculations for multiple resources"""
         task_ids = []
+        task_manager = get_task_manager()
         
         for resource_id in resource_ids:
             try:
-                task = calculate_rating.delay(resource_id, resource_type)
-                task_ids.append(task.id)
+                task_id = await task_manager.submit(
+                    "calculate_rating",
+                    resource_id,
+                    resource_type,
+                    background_tasks=background_tasks
+                )
+                task_ids.append(task_id)
             except Exception as e:
                 print(f"Failed to queue rating for {resource_id}: {e}")
                 continue
