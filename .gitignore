@@ -4,14 +4,7 @@
 # SECURITY - NEVER COMMIT THESE
 # =============================================================================
 
-# Environment variables and secrets
-.env
-.env.local
-.env.development
-.env.test
-.env.production
-.env.staging
-*.env
+
 
 # API keys and credentials
 config/secrets.yml
@@ -501,6 +494,5 @@ $RECYCLE.BIN/
 /frontend/build/
 /data/audio/
 /logs/
-seed_data_generated.sql
 
 */.venv/*
